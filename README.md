@@ -1,4 +1,5 @@
 # Extracao-de-dados-RestSharp
-Extração de dados da API do ZenDesk via biblioteca RestSharp usando o VS C#
 
-Esta extração é para um projeto de Analytics, onde extraímos os dados, fazermos o tratamento e fazermos a carga para o DB, utilizando a ferramenta SSIS (SQL Server Integration Services).
+Extração de dados via API do ZenDesk via biblioteca RestSharp usando Componente Script em linguagem C#.
+
+Desenvolvimento feito atravez do SQL Server Integration Services (SSIS) utilizando processo de ETL.																									
