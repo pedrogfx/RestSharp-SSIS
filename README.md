@@ -20,4 +20,11 @@ Exemplo que como que ficaria a estrutura da extração da Tickets.
 Dentro do script utilizamos parametros para algumas variáveis, para questão de segurança, temos um pacote que possui todas as variáveis que tenham qualquer sensibilidade (Acessos a DB's e Tokens).
 
 Essas variáveis passamos do SSIS para dentro do Script como "Read only Variables".
+
+Depois que é feita a extração, seguimos o fluxo com um "Derived Columns", pois é nesse componente que conseguimos fazer qualquer tratamento no Dado.
+
+Como exemplo, alguns casos não conseguimos transformar uma String para DateTime direto no script, então criamos um novo campo dentro do Derived Columns com o cast para Date
+Exemplo => (DT_DATE)updated_at.
+
+Depois desse tratamento vamos direcionar para o DB com o "OLE DB Destination", mapeando os campos que criamos e extraímos da API com os da tabela destino do DB.
 		
