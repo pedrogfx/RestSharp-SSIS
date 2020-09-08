@@ -18,7 +18,7 @@ Em todos os components scripts, utilizamos a parte de "Inputs and Outputs" para 
     * created_at: database timestamp [DT_DBTIMESTAMP];
     * updated_at: database timestamp [DT_DBTIMESTAMP];
     * type: string [DT_STR];
-![alt text](https://github.com/pedrogfx/Extracao-de-dados-RestSharp/blob/master/ZENDESK/TICKETS/Print%20output%20example.png)
+![alt text](https://github.com/pedrogfx/Extracao-RestSharp/blob/master/ZENDESK/TICKETS/PNG/Print%20output%20example.png)
     
 Exemplo que como que ficaria a estrutura da extração da Tickets.
 
@@ -28,4 +28,4 @@ Essas variáveis passamos do SSIS para dentro do Script como "Read only Variable
 
 Depois que é feita a extração, seguimos o fluxo com um "Derived Columns", pois é nesse componente que conseguimos fazer qualquer tratamento no Dado. Com isso podemos direcionar para o DB com o "OLE DB Destination", mapeando os campos que criamos e extraímos da API com os da tabela destino do DB.
 		
-![alt text](https://github.com/pedrogfx/Extracao-RestSharp/blob/master/ZENDESK/TICKETS/Print%20destination%20example.png)
+![alt text](https://github.com/pedrogfx/Extracao-RestSharp/blob/master/ZENDESK/TICKETS/PNG/Print%20destination%20example.png)
