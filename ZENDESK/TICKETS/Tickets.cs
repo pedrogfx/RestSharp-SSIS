@@ -1,176 +1,30 @@
-#region Help:  Introduction to the Script Component
-
-/* The Script Component allows you to perform virtually any operation that can be accomplished in
-
-* a .Net application within the context of an Integration Services data flow.
-
-*
-
-* Expand the other regions which have "Help" prefixes for examples of specific ways to use
-
-* Integration Services features within this script component. */
-
-#endregion
-
-
-
-#region Namespaces
-
 using System;
-
-using System.Data;
-
-using Microsoft.SqlServer.Dts.Pipeline.Wrapper;
-
-using Microsoft.SqlServer.Dts.Runtime.Wrapper;
-
-using Microsoft.CSharp;
-
-using RestSharp;
-
-using System.IO;
-
-using System.Windows.Forms;
-
-using System.Net;
-
-using Newtonsoft.Json;
-
 using System.Collections.Generic;
-
-using RestSharp.Authenticators;
-
+using System.Data;
+using System.IO;
+using System.Net;
+using System.Windows.Forms;
+using Microsoft.CSharp;
+using Microsoft.SqlServer.Dts.Pipeline.Wrapper;
+using Microsoft.SqlServer.Dts.Runtime.Wrapper;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-
-#endregion
-
+using RestSharp;
+using RestSharp.Authenticators;
 
 [Microsoft.SqlServer.Dts.Pipeline.SSISScriptComponentEntryPointAttribute]
 
 public class ScriptMain : UserComponent
 
 {
-
-    #region Help:  Using Integration Services variables and parameters
-
-    /* To use a variable in this script, first ensure that the variable has been added to
-
-     * either the list contained in the ReadOnlyVariables property or the list contained in
-
-     * the ReadWriteVariables property of this script component, according to whether or not your
-
-     * code needs to write into the variable.  To do so, save this script, close this instance of
-
-     * Visual Studio, and update the ReadOnlyVariables and ReadWriteVariables properties in the
-
-     * Script Transformation Editor window.
-
-     * To use a parameter in this script, follow the same steps. Parameters are always read-only.
-
-     *
-
-     * Example of reading from a variable or parameter:
-
-     *  DateTime startTime = Variables.MyStartTime;
-
-     *
-
-     * Example of writing to a variable:
-
-     *  Variables.myStringVariable = "new value";
-
-     */
-
-    #endregion
-
-
-
-    #region Help:  Using Integration Services Connnection Managers
-
-    /* Some types of connection managers can be used in this script component.  See the help topic
-
-     * "Working with Connection Managers Programatically" for details.
-
-     *
-
-     * To use a connection manager in this script, first ensure that the connection manager has
-
-     * been added to either the list of connection managers on the Connection Managers page of the
-
-     * script component editor.  To add the connection manager, save this script, close this instance of
-
-     * Visual Studio, and add the Connection Manager to the list.
-
-     *
-
-     * If the component needs to hold a connection open while processing rows, override the
-
-     * AcquireConnections and ReleaseConnections methods.
-
-     *
-
-     * Example of using an ADO.Net connection manager to acquire a SqlConnection:
-
-     *  object rawConnection = Connections.SalesDB.AcquireConnection(transaction);
-
-     *  SqlConnection salesDBConn = (SqlConnection)rawConnection;
-
-     *
-
-     * Example of using a File connection manager to acquire a file path:
-
-     *  object rawConnection = Connections.Prices_zip.AcquireConnection(transaction);
-
-     *  string filePath = (string)rawConnection;
-
-     *
-
-     * Example of releasing a connection manager:
-
-     *  Connections.SalesDB.ReleaseConnection(rawConnection);
-
-     */
-
-    #endregion
-
-
-
-    #region Help:  Firing Integration Services Events
-
-    /* This script component can fire events.
-
-     *
-
-     * Example of firing an error event:
-
-     *  ComponentMetaData.FireError(10, "Process Values", "Bad value", "", 0, out cancel);
-
-     *
-
-     * Example of firing an information event:
-
-     *  ComponentMetaData.FireInformation(10, "Process Values", "Processing has started", "", 0, fireAgain);
-
-     *
-
-     * Example of firing a warning event:
-
-     *  ComponentMetaData.FireWarning(10, "Process Values", "No rows were received", "", 0);
-
-     */
-
-    #endregion
-
+    //Criamos as devidas classes de acordo com os dados que queremos fazer a extração e também com a exata nomenclatura da API, pois o RestSharp faz o apontamento dos dados por associação. 
     Int64 EndTime = 0;
-    public class CustomFields
-    {
+    public class CustomFields {
         public Int64 id { get; set; }
         public string value { get; set; }
     }
 
-
-    public class Detalhes
-    {
+    public class Detalhes {
         public string url { get; set; }
         public Int64 id { get; set; }
         public DateTime created_at { get; set; }
@@ -197,104 +51,84 @@ public class ScriptMain : UserComponent
 
     }
 
-    public class Tickets
-    {
+    //Alguns casos vamos precisar criar Objetos, como podemos ver no detalhes
+    public class Tickets {
         public Detalhes[] tickets { get; set; }
         public bool end_of_stream { get; set; }
         public Int64 end_time { get; set; }
     }
 
-    public override void PreExecute()
+    public override void PreExecute ()
 
     {
-        base.PreExecute();
+        base.PreExecute ();
     }
 
-
-
-    /// <summary>
-
-    /// This method is called after all the rows have passed through this component.
-
-    ///
-
-    /// You can delete this method if you don't need to do anything here.
-
-    /// </summary>
-
-    public override void PostExecute()
+    public override void PostExecute ()
 
     {
 
-        base.PostExecute();
-
+        base.PostExecute ();
+        //Variavel de ambiente que criamos para definir o range final de extração dos dados.
         this.ReadWriteVariables["User::EndTime"].Value = EndTime;
 
     }
 
-    public override void CreateNewOutputRows()
+    public override void CreateNewOutputRows ()
 
     {
+        //Alguns protocolos de segurança que devemos utilizar para a extração vir completa se nenhum dado NULL
         ServicePointManager.Expect100Continue = true;
         ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
 
-       
-        string Url = Variables.ZendeskUrl;
-        string User = Variables.ZendeskUser;
-        string Pass = Variables.ZendeskPass;
-        Int64 StartTime = Variables.FuncTime;
-        string Call = Url + "incremental/tickets.json?per_page=1000&start_time=" + StartTime.ToString();
-        
-        var client = new RestClient(Call);
+        string Url = Variables.ZendeskUrl; //URL DO ZENDESK.
+        string User = Variables.ZendeskUser; //USUÁRIO DE ACESSO.
+        string Pass = Variables.ZendeskPass; //SENHA DE ACESSO.
+        Int64 StartTime = Variables.FuncTime; //VARIAVEL QUE PASSAMOS POR PARAMETRO NO PACOTE PARA DECLARAR A DATA DE INICIO DA EXTRAÇÃO.
+        string Call = Url + "incremental/tickets.json?per_page=1000&start_time=" + StartTime.ToString (); //FUNÇÃO DE CHAMADA DA API
+
+        var client = new RestClient (Call);
 
         client.Timeout = -1;
-        client.Authenticator = new HttpBasicAuthenticator(User, Pass);
-        
-        var request = new RestRequest(Method.GET);
-        IRestResponse response = client.Execute(request);
+        client.Authenticator = new HttpBasicAuthenticator (User, Pass);
 
-        if (response.IsSuccessful)
-        {
-            var settings = new JsonSerializerSettings
-            {
+        var request = new RestRequest (Method.GET);
+        IRestResponse response = client.Execute (request);
+
+        if (response.IsSuccessful) { //AQUI TEMOS UM LOG DE ERRO ONDE TESTAMOS A CONEXÃO DA API ANTES DE COMEÇAR A EXTRAÇÃO.
+            var settings = new JsonSerializerSettings {
                 NullValueHandling = NullValueHandling.Ignore,
                 MissingMemberHandling = MissingMemberHandling.Ignore
             };
 
-            var APIDetalhes = JsonConvert.DeserializeObject<Tickets>(response.Content, settings);
-            if(APIDetalhes.end_of_stream)
-            {
+            var APIDetalhes = JsonConvert.DeserializeObject<Tickets> (response.Content, settings); //DESSERIALIZAÇÃO DA ESTRUTURA DO JSON
+            //API DO ZENDESK TRABALHA COM O UNIXTIME, DENTRO DO NOSSO PACOTE DO SSIS TEMOS UM FOR/LOOPING CONTAINER ONDE @FUNCTIME = DATAINICIOUNIX (RANGE DE DATA QUE QUERMEOS)
+            //E FAZ O LOOP COM A CONDIÇÃO DE @FUNTIME < DATAFIMUNIX
+            if (APIDetalhes.end_of_stream) {
                 EndTime = Variables.DataFimUnix;
-            }
-            else
-            {
+            } else {
                 EndTime = APIDetalhes.end_time;
             }
 
-            //MessageBox.Show(Variables.DataFimUnix.ToString() + " - " + EndTime.ToString());
-            
-            foreach (var Det in APIDetalhes.tickets)
-            {
-                if (Det.custom_fields.Count > 0)
-                {
-                    foreach (var cf in Det.custom_fields)
-                    {
-                        if (cf.value != "null" && cf.value != "NULL" && cf.value != null)
-                        {
-                            OutputAPIBuffer.AddRow();
+            //TEMOS QUE FAZER UM FOREACH PARA A NOSSA DESSERIALIZAÇÃO APIDETALHES
+            //E AQUI VAMOS ENTRANDO NO DETALHE DE ACORDO COM A NECESSIDADE DO USUÁRIO PARA FAZER A EXTRAÇÃO
+            //ADICIONAMOS UM "OutputAPIBuffer.AddRow ();" PARA PODER ADICIONAR UMA LINHA DE REGISTRO PARA CADA UM DOS OUTPUT
+            //O OUTPUTAPIBUFFER.URL ESTA RECEBENDO O DADO DA API ATRAVEZ DO FOR E DA VARIAVEL DET.URL ONDE ESTA SENDO ATRBUÍDA ESTE VAlor;
+            foreach (var Det in APIDetalhes.tickets) {
+                if (Det.custom_fields.Count > 0) {
+                    foreach (var cf in Det.custom_fields) {
+                        if (cf.value != "null" && cf.value != "NULL" && cf.value != null) {
+                            OutputAPIBuffer.AddRow ();
                             OutputAPIBuffer.url = Det.url;
                             OutputAPIBuffer.id = Det.id;
-                            OutputAPIBuffer.createdat = Det.created_at.ToLocalTime();
-                            OutputAPIBuffer.updatedat = Det.updated_at.ToLocalTime();
+                            OutputAPIBuffer.createdat = Det.created_at.ToLocalTime ();
+                            OutputAPIBuffer.updatedat = Det.updated_at.ToLocalTime ();
                             OutputAPIBuffer.type = Det.type;
                             OutputAPIBuffer.subject = Det.subject;
                             OutputAPIBuffer.rawsubject = Det.raw_subject;
-                            if (Det.description.Length >= 8000)
-                            {
-                                OutputAPIBuffer.description = Det.description.Substring(0, 8000);
-                            }
-                            else
-                            {
+                            if (Det.description.Length >= 8000) {
+                                OutputAPIBuffer.description = Det.description.Substring (0, 8000);
+                            } else {
                                 OutputAPIBuffer.description = Det.description;
                             }
                             OutputAPIBuffer.priority = Det.priority;
@@ -309,31 +143,26 @@ public class ScriptMain : UserComponent
                             OutputAPIBuffer.customfieldid = cf.id;
                             OutputAPIBuffer.customfieldvalue = cf.value;
                             OutputAPIBuffer.ticketformid = Det.ticket_form_id;
-                            OutputAPIBuffer.tags = string.Join(",", Det.tags);
-                            OutputAPIBuffer.collaboratorids = string.Join(",", Det.collaborator_ids);
-                            OutputAPIBuffer.followerids = string.Join(",", Det.follower_ids);
-                            OutputAPIBuffer.emailccids = string.Join(",", Det.email_cc_ids);
+                            OutputAPIBuffer.tags = string.Join (",", Det.tags);
+                            OutputAPIBuffer.collaboratorids = string.Join (",", Det.collaborator_ids);
+                            OutputAPIBuffer.followerids = string.Join (",", Det.follower_ids);
+                            OutputAPIBuffer.emailccids = string.Join (",", Det.email_cc_ids);
                         }
 
-
                     }
-                }
-                else
-                {
-                    OutputAPIBuffer.AddRow();
+                } else {
+                    //AQUI TEMOS A CONDIÇÃO CASO NÃO SE ENCAIXE NOS CUSTOMFIELDS > 0 E TEREMOS QUE ADICIONAR OUTRA LINHA DE REGISTRO COM O ADDROW();
+                    OutputAPIBuffer.AddRow ();
                     OutputAPIBuffer.url = Det.url;
                     OutputAPIBuffer.id = Det.id;
-                    OutputAPIBuffer.createdat = Det.created_at.ToLocalTime();
-                    OutputAPIBuffer.updatedat = Det.updated_at.ToLocalTime();
+                    OutputAPIBuffer.createdat = Det.created_at.ToLocalTime ();
+                    OutputAPIBuffer.updatedat = Det.updated_at.ToLocalTime ();
                     OutputAPIBuffer.type = Det.type;
                     OutputAPIBuffer.subject = Det.subject;
                     OutputAPIBuffer.rawsubject = Det.raw_subject;
-                    if (Det.description.Length >= 8000)
-                    {
-                        OutputAPIBuffer.description = Det.description.Substring(0, 8000);
-                    }
-                    else
-                    {
+                    if (Det.description.Length >= 8000) {
+                        OutputAPIBuffer.description = Det.description.Substring (0, 8000);
+                    } else {
                         OutputAPIBuffer.description = Det.description;
                     }
                     OutputAPIBuffer.priority = Det.priority;
@@ -348,17 +177,14 @@ public class ScriptMain : UserComponent
                     OutputAPIBuffer.ticketformid = Det.ticket_form_id;
                 }
 
-
-
             }
-        }
-        else
-        {
-            OutputErroAPIBuffer.AddRow();
+        } else {
+            //CASO NÃO HAJA CONEXÃO COM API, TEMOS ESTE LOG DE ERRO QUE SERA APONTADO PARA OUTRO "OUTPUTAPI"
+            OutputErroAPIBuffer.AddRow ();
             OutputErroAPIBuffer.Chamada = Call;
             OutputErroAPIBuffer.Erro = response.ErrorMessage;
-            OutputErroAPIBuffer.StatusCode = (int)response.StatusCode;
-            OutputErroAPIBuffer.StatusCodeDesc = response.StatusCode.ToString();
+            OutputErroAPIBuffer.StatusCode = (int) response.StatusCode;
+            OutputErroAPIBuffer.StatusCodeDesc = response.StatusCode.ToString ();
             OutputErroAPIBuffer.Content = response.Content;
         }
     }
