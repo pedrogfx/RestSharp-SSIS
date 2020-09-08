@@ -23,3 +23,4 @@ Essas variáveis passamos do SSIS para dentro do Script como "Read only Variable
 
 Depois que é feita a extração, seguimos o fluxo com um "Derived Columns", pois é nesse componente que conseguimos fazer qualquer tratamento no Dado. Com isso podemos direcionar para o DB com o "OLE DB Destination", mapeando os campos que criamos e extraímos da API com os da tabela destino do DB.
 		
+![alt text](https://github.com/pedrogfx/Extracao-RestSharp/blob/master/ZENDESK/TICKETS/Print%20destination%20example.png)
